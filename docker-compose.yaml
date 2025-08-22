@@ -1,0 +1,78 @@
+services:
+  airflow:
+    image: apache/airflow:latest
+    container_name: af_boardgame
+    hostname: airflow_board_game
+    command: airflow standalone
+    ports:
+      - 8080:8080 # Airflow Web UI
+    networks:
+      - spark-network
+    volumes:
+      - ./dags:/opt/airflow/dags
+
+  leader:
+    build: ./leader
+    container_name: leader
+    hostname: leader
+    ports:
+      - 8081:8080 # Spark Web UI
+      - 7077:7077 # Spark leader port
+    volumes:
+      - ./conf:/opt/spark/conf
+      - ./work-dir:/opt/spark/work-dir
+      - ./output:/opt/spark/files/out
+      - ./input:/opt/spark/files/in
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h leader
+    networks:
+      - spark-network
+
+  api:
+    build: ./api_boardgame
+    restart: always
+    container_name: api_boardgame
+    hostname: api_boardgame
+    ports:
+      - 5000:5000 # Spark API
+    volumes:
+      - ./conf:/opt/spark/conf
+      - ./work-dir:/opt/spark/work-dir
+      - ./output:/opt/spark/files/out
+      - ./input:/opt/spark/files/in
+    networks:
+      - spark-network
+
+  worker-1:
+    build: ./worker
+    container_name: worker-1_boardgame
+    hostname: worker-1_boardgame
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://leader:7077
+    ports:
+      - 8082:8081
+    volumes:
+      - ./conf:/opt/spark/conf
+      - ./output:/opt/spark/files/out
+      - ./input:/opt/spark/files/in
+    networks:
+      - spark-network
+    depends_on:
+      - leader
+
+  worker-2:
+    build: ./worker
+    container_name: worker-2_boardgame
+    hostname: worker-2_boardgame
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://leader:7077
+    ports:
+      - 8083:8081
+    volumes:
+      - ./conf:/opt/spark/conf
+      - ./output:/opt/spark/files/out
+      - ./input:/opt/spark/files/in
+    networks:
+      - spark-network
+    depends_on:
+      - leader
+
+networks:
+  spark-network: {}
