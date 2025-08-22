@@ -18,18 +18,23 @@ bgg_df = spark.read.csv(
     "/opt/spark/files/in/bgg_ranks.csv", 
     header=True, 
     inferSchema=True,
-    # quote='"',
-    # escape='"', 
+    quote='"',
+    escape='"', 
     # multiLine=False,
     # encoding="utf-8"
 )
 # bgg_df = bgg_df.withColumn("yearpublished", regexp_replace(col("yearpublished"), '"', ''))
-bgg_df = bgg_df.filter(length(col("yearpublished").cast("string")) <= 4)
+# bgg_df = bgg_df.filter(length(col("yearpublished").cast("string")) <= 4)
+
+
+
 
 mmbg_df = spark.read.csv(
     "/opt/spark/files/in/melissa-monfared-board-games.csv", 
     header=True, 
     inferSchema=True, 
+    quote='"',
+    escape='"',
     encoding="cp1252"
 ) # change encoding if needed
 
@@ -70,6 +75,11 @@ full_df = joined_df.select(
 "domain_name",
 "mechanics_name")
 
+invalid_years = full_df.filter(~col("year_published").rlike(r"^-?\d+$"))
+
+invalid_years.show()
+
+
 #data cleaning
 full_df = full_df.dropDuplicates().dropna(subset=["game_name", "min_players", "year_published", "max_players", "avg_rating"])
 
@@ -104,6 +114,9 @@ mechanics_df, board_game_mechanics_df = make_table_and_bridge(full_df, "mechanic
 
 #BOARD GAMES TABLE
 board_games_df = full_df.drop("domain_name", "mechanics_name")
+
+
+
 #print("final board games table")
 #board_games_df.show()
 
@@ -139,5 +152,6 @@ print("board game domains insert successful")
 #BOARD GAME MECHANICS BRIDGE TABLE
 board_game_mechanics_df.write.format("jdbc").options(**jdbc_options,dbtable="board_games_mechanics").mode("append").save()
 print("board game mechanics insert successful")
+
 
 spark.stop()
