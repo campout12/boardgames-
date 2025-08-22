@@ -1,0 +1,25 @@
+import json
+import pendulum
+from airflow.providers.http.operators.http import HttpOperator
+from airflow.sdk import dag
+
+@dag(
+    schedule=None,
+    start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
+    catchup=False,
+    tags=["example"],
+)
+
+def http_board_games_dag():
+    data={"app":"etl.py"}
+    http_task=HttpOperator(
+        task_id="http_task",
+        http_conn_id="http_spark",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        endpoint="/submit",
+         data=json.dumps(data),
+    )
+    http_task 
+    
+http_board_games_dag()

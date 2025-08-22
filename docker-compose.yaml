@@ -13,8 +13,8 @@ services:
 
   leader:
     build: ./leader
-    container_name: leader_boardgame
-    hostname: leader_boardgame
+    container_name: leader
+    hostname: leader
     ports:
       - 8081:8080 # Spark Web UI
       - 7077:7077 # Spark leader port
